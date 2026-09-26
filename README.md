@@ -1,8 +1,8 @@
 # UrbanNest Retail Pipeline
 
-An end-to-end data pipeline that turns messy retail order data into a clean, analysis-ready PostgreSQL table, built with Python, Pandas and SQL.
+An end-to-end data pipeline that turns messy retail order data into a clean, analysis-ready PostgreSQL database, built with Python, Pandas and SQL.
 
-UrbanNest sells through a website, mobile app, physical stores, marketplaces and Instagram. Each channel records data differently, so the raw data had missing values, inconsistent spellings, wrong data types and contradictory statuses. This project cleans and standardises it, adds useful metrics, loads it into PostgreSQL, and answers business questions with SQL.
+UrbanNest sells through a website, mobile app, physical stores, marketplaces and Instagram. Each channel records data differently, so the raw data had missing values, inconsistent spellings, wrong data types and contradictory statuses. This project cleans and standardises it, adds useful metrics, loads it into PostgreSQL, models it as a star schema, and answers business questions with SQL.
 
 ## Workflow
 
@@ -12,7 +12,8 @@ flowchart LR
   B --> C[Clean]
   C --> D[Transform]
   D --> E[(PostgreSQL)]
-  E --> F[SQL analysis]
+  E --> F[Star schema]
+  E --> G[SQL analysis]
 ```
 
 ## Tools
@@ -29,7 +30,8 @@ urbannest-retail-pipeline/
 │   ├── transformation.ipynb # add metrics and load into PostgreSQL
 │   └── analysis.ipynb       # run the SQL analysis
 ├── sql/
-│   └── analysis.sql      # business questions in SQL
+│   ├── 02_star_schema.sql   # builds the star schema
+│   └── 03_analysis.sql      # business questions in SQL
 ├── docs/
 │   └── data_quality_report.md
 ├── src/
@@ -47,6 +49,7 @@ urbannest-retail-pipeline/
 2. Install the Python libraries: `pip install -r requirements.txt`
 3. Copy `.env.example` to `.env` and add your password.
 4. Run the notebooks in order: `profiling` → `transformation` → `analysis`.
+5. Build the star schema by running `sql/02_star_schema.sql` in PostgreSQL (for example in pgAdmin's Query Tool).
 
 ## Data quality
 The raw data (5,000 orders, 25 columns) had these problems. Full details are in [docs/data_quality_report.md](docs/data_quality_report.md).
@@ -64,6 +67,60 @@ The raw data (5,000 orders, 25 columns) had these problems. Full details are in 
 - Regular customers bring in the most revenue (₦72.5M).
 - Website is the strongest channel (₦49.7M); Instagram is the weakest (₦23.3M).
 - 589 of 5,000 orders were delayed.
+
+## Data model
+The clean data is also organised as a star schema in PostgreSQL ([sql/02_star_schema.sql](sql/02_star_schema.sql)): one fact table linked to four dimension tables.
+
+```mermaid
+erDiagram
+    DIM_CUSTOMER ||--o{ FACT_ORDER : places
+    DIM_PRODUCT  ||--o{ FACT_ORDER : "appears in"
+    DIM_CHANNEL  ||--o{ FACT_ORDER : "sold through"
+    DIM_DATE     ||--o{ FACT_ORDER : "ordered on"
+
+    FACT_ORDER {
+        text order_id PK
+        text customer_id FK
+        int product_key FK
+        int channel_key FK
+        date date_key FK
+        int quantity
+        float order_revenue
+        int delivery_fee
+    }
+    DIM_CUSTOMER {
+        text customer_id PK
+        text gender
+        text age_group
+        text region
+        text customer_segment
+    }
+    DIM_PRODUCT {
+        int product_key PK
+        text product_name
+        text product_category
+    }
+    DIM_CHANNEL {
+        int channel_key PK
+        text sales_channel
+    }
+    DIM_DATE {
+        date date_key PK
+        int year
+        int quarter
+        int month
+    }
+```
+
+| Table | Rows | Holds |
+|---|---|---|
+| fact_order | 5,000 | One row per order: quantities, revenue, fees, statuses |
+| dim_customer | 5,000 | Customer details |
+| dim_product | 24 | Products, keyed by name because the original product_id was unreliable |
+| dim_channel | 6 | Sales channels |
+| dim_date | 970 | Calendar details for each order date |
+
+The fact table has the same 5,000 orders and the same total revenue as the source table, so nothing was lost when building the model.
 
 ## Limitations
 - Each customer appears only once, so repeat-purchase analysis isn't possible.
