@@ -69,48 +69,7 @@ The raw data (5,000 orders, 25 columns) had these problems. Full details are in 
 - 589 of 5,000 orders were delayed.
 
 ## Data model
-The clean data is also organised as a star schema in PostgreSQL ([sql/02_star_schema.sql](sql/02_star_schema.sql)): one fact table linked to four dimension tables.
-
-```mermaid
-erDiagram
-    DIM_CUSTOMER ||--o{ FACT_ORDER : places
-    DIM_PRODUCT  ||--o{ FACT_ORDER : "appears in"
-    DIM_CHANNEL  ||--o{ FACT_ORDER : "sold through"
-    DIM_DATE     ||--o{ FACT_ORDER : "ordered on"
-
-    FACT_ORDER {
-        text order_id PK
-        text customer_id FK
-        int product_key FK
-        int channel_key FK
-        date date_key FK
-        int quantity
-        float order_revenue
-        int delivery_fee
-    }
-    DIM_CUSTOMER {
-        text customer_id PK
-        text gender
-        text age_group
-        text region
-        text customer_segment
-    }
-    DIM_PRODUCT {
-        int product_key PK
-        text product_name
-        text product_category
-    }
-    DIM_CHANNEL {
-        int channel_key PK
-        text sales_channel
-    }
-    DIM_DATE {
-        date date_key PK
-        int year
-        int quarter
-        int month
-    }
-```
+<img width="664" height="714" alt="Screenshot 2026-09-26 at 12 35 02" src="https://github.com/user-attachments/assets/24ee792b-b598-4f3a-97e5-bfb735e8c7da" />
 
 | Table | Rows | Holds |
 |---|---|---|
