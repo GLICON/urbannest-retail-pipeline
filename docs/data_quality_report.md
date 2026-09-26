@@ -1,3 +1,9 @@
+[← Back to README](../README.md)
+
+# Data Quality Report
+
+This report lists the data-quality issues found in the raw UrbanNest order data (5,000 orders, 25 columns), the evidence for each, and how each was handled. See the [project README](../README.md) for the full pipeline.
+
 ## Data quality issues
 
 | Issue | Where | Evidence | Decision |
